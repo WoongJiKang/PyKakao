@@ -10,7 +10,7 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 image_path = os.path.join(current_directory, "example.png")
 
 # Daum 검색 API 인스턴스 생성
-API_KEY = '240c999c57b9f72a5fc36214ab511afc'
+API_KEY = ''
 DAUM = DaumSearch(service_key=API_KEY)
 
 # 검색 결과 저장용 변수
