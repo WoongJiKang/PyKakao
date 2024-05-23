@@ -131,5 +131,4 @@ dmypy.json
 config.py
 
 # api_key setting
-
 api_key.json

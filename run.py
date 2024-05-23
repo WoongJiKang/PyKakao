@@ -6,12 +6,14 @@ import json
 import os
 from PyKakao import DaumSearch
 import pandas as pd
+import re
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Daum 검색")
-        self.geometry("800x600")
+        self.geometry("1100x700")
+        self.resizable(False, False)
 
         self.search_term = tk.StringVar()
         self.service_key = ""  # 초기화
@@ -95,10 +97,21 @@ class App(tk.Tk):
         df = search_func(term, dataframe=True)
 
         if df is not None and not df.empty:
+        # <b> 태그 및 &#숫자 형식 제거
+            def clean_text(text):
+                if isinstance(text, str):
+                    text = re.sub(r'<\/?b>', '', text)  # <b> 태그 제거
+                    text = re.sub(r'&#\d+;', '', text)  # &#숫자 형식 제거
+                return text
+
+            for column in ['contents', 'title']:
+                if column in df.columns:
+                    df[column] = df[column].apply(clean_text)
+
             tree = ttk.Treeview(frame, columns=list(df.columns), show="headings")
             for col in df.columns:
                 tree.heading(col, text=col)
-                tree.column(col, width=Font().measure(col) + 20)
+                tree.column(col, width=Font().measure(col) + 10)
 
             for i, row in df.iterrows():
                 tree.insert("", "end", values=list(row))
@@ -150,16 +163,34 @@ class App(tk.Tk):
             # 선택된 아이템의 값(튜플) 가져오기
             item_values = tree.item(selected_item, 'values')
 
-            # URL 열의 인덱스 확인
-            url_index = tree['columns'].index('url')
-
-            # 선택된 아이템의 URL 가져오기
-            url = item_values[url_index]
+            # URL 열의 인덱스 확인 후 URL 가져오기
+            url_columns = ['url', 'doc_url']
+            url = None
+            for col in url_columns:
+                if col in tree['columns']:
+                    url_index = tree['columns'].index(col)
+                    url = item_values[url_index]
+                    break
 
             # URL이 있는 경우 웹 브라우저에서 열기
             if url:
-                import webbrowser
-                webbrowser.open_new(url)
+                # 새로운 창 생성
+                new_window = tk.Toplevel(self)
+                new_window.title("Open URL")
+                new_window.geometry("300x100")
+
+                def open_in_browser():
+                    import webbrowser
+                    webbrowser.open_new(url)
+                    new_window.destroy()
+
+                # '웹 브라우저로 열기' 버튼
+                open_button = tk.Button(new_window, text="웹 브라우저로 열기", command=open_in_browser)
+                open_button.pack(pady=10)
+
+                # '카톡 나에게 주소 보내기' 버튼 (구현은 사용자에 따라 추가 가능)
+                send_button = tk.Button(new_window, text="카톡 나에게 주소 보내기")
+                send_button.pack(pady=10)
 
 if __name__ == "__main__":
     app = App()
