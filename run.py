@@ -1,24 +1,28 @@
-import tkinter as tk
-from tkinter import ttk
-from tkinter.font import Font
-from PIL import Image, ImageTk  #pil 패키지 사용
-import json
-import os
-from PyKakao import DaumSearch
-from PyKakao import KoGPT
-import pandas as pd
-import re
-from datetime import datetime  # datetime 모듈 임포트
+import tkinter as tk  # Tkinter 모듈을 tk로 별칭(alias)하여 임포트합니다.
+from tkinter import ttk  # Tkinter의 themed 위젯을 임포트합니다.
+from tkinter.font import Font  # Tkinter의 폰트 관련 기능을 임포트합니다.
+from PIL import Image, ImageTk  # PIL 패키지의 Image 모듈을 임포트하여 이미지 처리에 사용합니다.
+import json  # JSON 데이터 형식을 처리하기 위한 모듈입니다.
+import os  # 운영체제와 상호 작용하기 위한 모듈입니다.
+from PyKakao import DaumSearch  # PyKakao 패키지에서 DaumSearch 클래스를 임포트합니다.
+from PyKakao import KoGPT  # PyKakao 패키지에서 KoGPT 클래스를 임포트합니다.
+import pandas as pd  # 데이터 분석 및 조작을 위한 패키지인 pandas를 임포트합니다.
+import re  # 정규 표현식을 사용하기 위한 모듈입니다.
+from datetime import datetime  # datetime 모듈에서 datetime 클래스를 임포트합니다. 이는 날짜 및 시간을 다루는 데 사용됩니다.
 
 class App(tk.Tk):
     def __init__(self):
+        # 생성자
         super().__init__()
-        self.title("Daum 검색")
+        self.title("PyKakao 검색엔진")
         self.geometry("1500x700")
         self.resizable(False, False)
 
         self.search_term = tk.StringVar()
         self.service_key = ""  # 초기화
+
+        self.notebook_visible = False
+        self.gpt_frame_visible = False
 
         self.create_widgets()
         
@@ -31,53 +35,72 @@ class App(tk.Tk):
         self.gpt = KoGPT(service_key=self.service_key)
 
     def create_widgets(self):
+        # 검색 프레임 생성
         search_frame = tk.Frame(self)
-        search_frame.grid(row=0, column=0, pady=1, padx=1, sticky="ew")
+        search_frame.grid(row=0, column=0, pady=1, sticky="ew")
 
         # 로고 이미지 로드 및 크기 조정
-        logo_path = os.path.join('assets', 'img', 'Daum_logo.png')
+        logo_path = os.path.join('assets', 'img', 'logo.png')
         logo_image = Image.open(logo_path)
-        resized_logo_image = logo_image.resize((100, 50), Image.Resampling.LANCZOS)  # 크기 조정
+        resized_logo_image = logo_image.resize((200, 90), Image.Resampling.LANCZOS)  # 크기 조정
         logo_photo = ImageTk.PhotoImage(resized_logo_image)
 
-        # 로고 이미지 레이블
-        logo_label = tk.Label(search_frame, image=logo_photo)
+        # 로고 이미지 Frame, Label
+        logo_frame = tk.Frame(search_frame)
+        logo_frame.grid(row=0, column=0, pady=1, padx=1, sticky="w")
+        logo_label = tk.Label(logo_frame, image=logo_photo)
         logo_label.image = logo_photo  # 참조 유지
-        logo_label.grid(row=0, column=0, padx=(0, 10))
+        logo_label.grid(row=0, column=0)
 
-        tk.Label(search_frame, text="검색어:").grid(row=0, column=1)
-        tk.Entry(search_frame, textvariable=self.search_term, width=50).grid(row=0, column=2)
-        tk.Button(search_frame, text="검색", command=self.perform_search).grid(row=0, column=3)
+        insert_frame = tk.Frame(search_frame)
+        insert_frame.grid(row=0, column=1, pady=1, sticky="ew")
+        tk.Label(insert_frame, text="검색어:").grid(row=0, column=1)
+        tk.Entry(insert_frame, textvariable=self.search_term, width=50).grid(row=0, column=2)
+        tk.Button(insert_frame, text="검색", command=self.perform_search).grid(row=0, column=3)
 
         # Service Key Entry
-        tk.Label(search_frame, text="API KEY:").grid(row=1, column=1)
-        self.api_key_entry = tk.Entry(search_frame, width=50)
+        tk.Label(insert_frame, text="API KEY:").grid(row=1, column=1)
+        self.api_key_entry = tk.Entry(insert_frame, width=50)
         self.api_key_entry.grid(row=1, column=2, padx=(0, 5))
         self.api_key_entry.insert(tk.END, self.service_key)
 
         # Load Button
-        load_button = tk.Button(search_frame, text="Load", command=self.load_service_key)
+        load_button = tk.Button(insert_frame, text="Load", command=self.load_service_key)
         load_button.grid(row=1, column=3)
 
         # Save Button
-        save_button = tk.Button(search_frame, text="Save", command=self.save_service_key)
+        save_button = tk.Button(insert_frame, text="Save", command=self.save_service_key)
         save_button.grid(row=1, column=4)
 
         # Delete Button
-        delete_button = tk.Button(search_frame, text="Delete", command=self.delete_service_key)
+        delete_button = tk.Button(insert_frame, text="Delete", command=self.delete_service_key)
         delete_button.grid(row=1, column=5)
 
+        # toggle_frame 생성
+        toggle_frame = tk.Frame(search_frame)
+        toggle_frame.grid(row=1, column=0, sticky="w")
+        self.toggle_search_frame_button = tk.Button(toggle_frame, text="다음 검색 열기", command=self.toggle_search_frame)
+        self.toggle_search_frame_button.grid(row=0, column=0, padx=5)
+
+        self.toggle_gpt_frame_button = tk.Button(toggle_frame, text="KoGPT 검색 열기", command=self.toggle_gpt_frame)
+        self.toggle_gpt_frame_button.grid(row=0, column=1)
+
+        # 엔진 프레임 생성
+        engine_frame = tk.Frame(self)
+        engine_frame.grid(row=2, column=0, sticky="nsew")
+        
+
         # notebook_frame 생성
-        notebook_frame = tk.Frame(self)
-        notebook_frame.grid(row=1, column=0, sticky="nsew")
-        notebook_frame.grid_rowconfigure(0, weight=1)
-        notebook_frame.grid_columnconfigure(0, weight=1)
+        notebook_frame = tk.Frame(engine_frame)
+        notebook_frame.grid(row=0, column=0, sticky="nsew")
+        
 
         # 결과를 출력할 Table Type의 Display 추가
         self.notebook = ttk.Notebook(notebook_frame)
         self.notebook.pack(expand=True, fill='both')
         self.notebook.bind("<Double-1>", self.open_url_in_browser)  # 해당 행 더블 클릭 시 open_url_in_browser 함수 호출
 
+        # Daum 검색 카테고리
         self.tabs = {}
         for idx, category in enumerate(["웹문서", "동영상", "이미지", "블로그", "책", "카페"]):
             frame = tk.Frame(self.notebook)
@@ -85,30 +108,43 @@ class App(tk.Tk):
             self.notebook.add(frame, text=category)
 
         # gpt_frame 생성
-        gpt_frame = tk.Frame(self)
-        gpt_frame.grid(row=1, column=1, pady=5)
+        gpt_frame = tk.Frame(engine_frame)
+        gpt_frame.grid(row=0, column=1, padx=5, sticky="nsew")
 
         # KoGPT Label
-        self.gpt_result_label = tk.Label(gpt_frame, text="KoGPT")
-        self.gpt_result_label.grid(row=0, column=0)
+        self.gpt_result_label = tk.Label(gpt_frame, text="KoGPT", bg="yellow", width=80)
+        self.gpt_result_label.grid(row=0, column=0, columnspan=1, sticky="ew")
 
         # KoGPT 결과를 출력할 Text widget
-        self.gpt_result_text = tk.Text(gpt_frame, wrap=tk.WORD, height=10, width=80, state=tk.DISABLED)
+        self.gpt_result_text = tk.Text(gpt_frame, wrap=tk.WORD, height=10, width=80, state=tk.DISABLED, bg="darkgray", fg="white")
         self.gpt_result_text.grid(row=1, column=0, pady=5, padx=10, sticky="nsew")
 
+        # gpt_prompt_frame 생성
+        gpt_prompt_frame = tk.Frame(gpt_frame)
+        gpt_prompt_frame.grid(row=2, column=0, pady=5)
+
         # KoGPT 질문 Label
-        self.gpt_prompt_label = tk.Label(gpt_frame, text="질문 입력")
-        self.gpt_prompt_label.grid(row=2, column=0)
+        self.gpt_prompt_label = tk.Label(gpt_prompt_frame, text="질문 입력:")
+        self.gpt_prompt_label.grid(row=0, column=0)
 
         # KoGPT 질문 입력 Entry
-        self.gpt_prompt_entry = tk.Entry(gpt_frame, width=50)
-        self.gpt_prompt_entry.grid(row=3, column=0, pady=5, padx=10)
+        self.gpt_prompt_entry = tk.Entry(gpt_prompt_frame, width=50)
+        self.gpt_prompt_entry.grid(row=0, column=1, pady=5, padx=10)
 
         # KoGPT 결과 출력 Button
-        self.gpt_generate_button = tk.Button(gpt_frame, text="전송", command=self.generate_response)
-        self.gpt_generate_button.grid(row=3, column=1, pady=5, padx=5, sticky="w")
+        self.gpt_generate_button = tk.Button(gpt_prompt_frame, text="전송", command=self.generate_response)
+        self.gpt_generate_button.grid(row=0, column=2, pady=5, padx=5, sticky="w")
+
+        # notebook_frame과 gpt_frame 초기화 시 숨기기
+        self.notebook.pack_forget()
+        self.gpt_result_label.grid_remove()
+        self.gpt_result_text.grid_remove()
+        self.gpt_prompt_label.grid_remove()
+        self.gpt_prompt_entry.grid_remove()
+        self.gpt_generate_button.grid_remove()
 
     def perform_search(self):
+        # 입력받은 검색어을 검색엔진에 적용 후 실행
         term = self.search_term.get()
         if not term:
             return
@@ -124,16 +160,18 @@ class App(tk.Tk):
         self.generate_response(term)
 
     def search_and_display(self, term, category, search_func):
-        frame = self.tabs[category]
+        # 카테고리 별로 검색어에 따른 검색결과 출력
+        frame = self.tabs[category]  # 해당 카테고리의 프레임을 가져옵니다.
 
         for widget in frame.winfo_children():
-            widget.destroy()
+            widget.destroy()  # 프레임 내의 모든 위젯을 제거합니다.
 
+        # 검색 함수를 사용하여 데이터프레임을 가져옵니다.
         df = search_func(term, dataframe=True)
 
-        if df is not None and not df.empty:
-        # <b> 태그 및 &#숫자 형식 제거
+        if df is not None and not df.empty:  # 데이터프레임이 비어있지 않은 경우
             def clean_text(text):
+                # 텍스트를 정리하여 반환하는 함수입니다.
                 if isinstance(text, str):
                     text = re.sub(r'<\/?b>', '', text)  # <b> 태그 제거
                     text = re.sub(r'&#\d+;', '', text)  # &#숫자 형식 제거
@@ -141,26 +179,29 @@ class App(tk.Tk):
 
             for column in ['contents', 'title']:
                 if column in df.columns:
-                    df[column] = df[column].apply(clean_text)
+                    df[column] = df[column].apply(clean_text)  # 'contents'와 'title' 열의 불필요한 태그를 정리합니다.
 
+            # 결과를 표시할 Treeview 위젯을 생성합니다.
             tree = ttk.Treeview(frame, columns=list(df.columns), show="headings")
             for col in df.columns:
                 if col == 'datetime':  # datetime 컬럼에만 정렬 이벤트 바인딩
                     tree.heading(col, text=col, command=lambda _col=col: self.sort_column(tree, _col, False))
                 else:
                     tree.heading(col, text=col)  # 다른 컬럼은 정렬 이벤트 없음
-                tree.column(col, width=Font().measure(col) + 10)
+                tree.column(col, width=Font().measure(col) + 10)  # 각 열의 너비를 설정합니다.
 
-            for i, row in df.iterrows():
+            for i, row in df.iterrows():  # 데이터프레임의 각 행을 반복하며 Treeview에 추가합니다.
                 tree.insert("", "end", values=list(row))
 
-            tree.pack(fill='both', expand=True)
-            tree.bind("<Double-1>", self.open_url_in_browser)
+            tree.pack(fill='both', expand=True)  # Treeview를 프레임에 팩하여 표시합니다.
+            tree.bind("<Double-1>", self.open_url_in_browser)  # 더블 클릭 이벤트에 함수를 바인딩합니다.
         else:
+            # 검색 결과가 없는 경우 메시지를 표시합니다.
             label = tk.Label(frame, text="No results found.")
             label.pack(fill='both', expand=True)
 
     def load_service_key(self):
+        # api_key_entry 입력란에 api_key.json 파일의 service_key 값으로 덮어쓰기
         try:
             with open('api_key.json', 'r') as f:
                 service_key = json.load(f)['service_key']
@@ -170,8 +211,9 @@ class App(tk.Tk):
         self.api_key_entry.insert(tk.END, service_key)
         self.service_key = service_key
         self.daum = DaumSearch(service_key=self.service_key)
-
+    
     def save_service_key(self):
+        # api_key 값을 api_key_entry에 적힌 내용으로 저장
         service_key = self.api_key_entry.get()
         with open('api_key.json', 'w') as f:
             json.dump({'service_key': service_key}, f)
@@ -179,6 +221,7 @@ class App(tk.Tk):
         self.daum = DaumSearch(service_key=self.service_key)
 
     def delete_service_key(self):
+        # api_key 초기값으로 초기화 후 api_key_entry 공백으로 변경
         default_content = {"service_key": "YOUR_SERVICE_KEY_HERE"}
         with open('api_key.json', 'w') as f:
             json.dump(default_content, f)
@@ -251,6 +294,7 @@ class App(tk.Tk):
                 send_button.pack(pady=10)
 
     def generate_response(self, term):
+        # 입력 받은 검색어를 바탕으로 KoGPT 응답
         # 입력 받은 검색어 가져오기
         term = self.search_term.get()
 
@@ -303,9 +347,37 @@ class App(tk.Tk):
         return filtered_result
 
     def remove_html_tags(self, text):
-        # 문자열에서 HTML 태그와 이스케이프 문자 제거
+        # 문자열에서 HTML 태그와 u200b 문자 제거
         clean = re.compile(r'<.*?>|\\u200b|\\')
         return re.sub(clean, '', text)
+
+    def toggle_search_frame(self):
+        # 다음 검색엔진 숨김, 열림 기능
+        if self.notebook_visible:
+            self.notebook.pack_forget()
+            self.toggle_search_frame_button.config(text="다음 검색 열기")
+        else:
+            self.notebook.pack(expand=True, fill='both')
+            self.toggle_search_frame_button.config(text="다음 검색 숨기기")
+        self.notebook_visible = not self.notebook_visible
+
+    def toggle_gpt_frame(self):
+        # KoGPT 검색엔진 숨김, 열림 기능
+        if self.gpt_frame_visible:
+            self.gpt_result_label.grid_remove()
+            self.gpt_result_text.grid_remove()
+            self.gpt_prompt_label.grid_remove()
+            self.gpt_prompt_entry.grid_remove()
+            self.gpt_generate_button.grid_remove()
+            self.toggle_gpt_frame_button.config(text="KoGPT 검색 열기")
+        else:
+            self.gpt_result_label.grid()
+            self.gpt_result_text.grid()
+            self.gpt_prompt_label.grid()
+            self.gpt_prompt_entry.grid()
+            self.gpt_generate_button.grid()
+            self.toggle_gpt_frame_button.config(text="KoGPT 검색 숨기기")
+        self.gpt_frame_visible = not self.gpt_frame_visible
 
 if __name__ == "__main__":
     app = App()
