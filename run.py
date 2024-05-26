@@ -9,6 +9,7 @@ from PyKakao import KoGPT  # PyKakao 패키지에서 KoGPT 클래스를 임포�
 import pandas as pd  # 데이터 분석 및 조작을 위한 패키지인 pandas를 임포트합니다.
 import re  # 정규 표현식을 사용하기 위한 모듈입니다.
 from datetime import datetime  # datetime 모듈에서 datetime 클래스를 임포트합니다. 이는 날짜 및 시간을 다루는 데 사용됩니다.
+from PyKakao import Message # PyKakao 패키지에서 Message 클래스를 임포트합니다.
 
 class App(tk.Tk):
     def __init__(self):
@@ -273,40 +274,153 @@ class App(tk.Tk):
                     url = item_values[url_index]
                     break
 
+            def show_kakao_frame():
+                kakao_frame.pack(side="top", pady=10)
+
+            def go_kakao_dev():
+                kakao_dev_url = "https://developers.kakao.com/"
+                import webbrowser
+                webbrowser.open_new(kakao_dev_url)
+
+            def send_auth_url():
+                # 메시지 API 인스턴스 생성
+                MSG = Message(service_key=self.service_key)
+
+                # 카카오 인증코드 발급 URL 생성
+                auth_url = MSG.get_url_for_generating_code()
+                import webbrowser
+                webbrowser.open_new(auth_url)
+
             # URL이 있는 경우 웹 브라우저에서 열기
             if url:
                 # 새로운 창 생성
-                new_window = tk.Toplevel(self)
-                new_window.title("Open URL")
-                new_window.geometry("300x100")
+                url_window = tk.Toplevel(self)
+                url_window.title("Open URL")
+                url_window.geometry("600x500")
+                url_window.resizable(False, False)
 
                 def open_in_browser():
                     import webbrowser
                     webbrowser.open_new(url)
-                    new_window.destroy()
+                    url_window.destroy()
 
+                url_frame = tk.Frame(url_window)
+                url_frame.pack(side="top", pady=10)
                 # '웹 브라우저로 열기' 버튼
-                open_button = tk.Button(new_window, text="웹 브라우저로 열기", command=open_in_browser)
-                open_button.pack(pady=10)
+                open_button = tk.Button(url_frame, text="웹 브라우저로 열기", command=open_in_browser)
+                open_button.pack(side="left")
 
-                # '카톡 나에게 주소 보내기' 버튼 (미구현)
-                send_button = tk.Button(new_window, text="카톡 나에게 주소 보내기")
-                send_button.pack(pady=10)
+                # '카톡 나에게 주소 보내기' 버튼
+                open_kakao_button = tk.Button(url_frame, text="카톡 나에게 주소 보내기", command=show_kakao_frame)
+                open_kakao_button.pack(side="left")
 
-    def generate_response(self, term):
-        # 입력 받은 검색어를 바탕으로 KoGPT 응답
-        # 입력 받은 검색어 가져오기
-        term = self.search_term.get()
+                # '카톡 나에게 주소 보내기' 프레임 생성 (기본값으로 보이지 않게 설정)
+                kakao_frame = tk.Frame(url_window)
+                # 초기에는 프레임을 보이지 않게 설정
+                kakao_frame.pack_forget()
+                kakao_option_frame = tk.Frame(kakao_frame)
+                kakao_option_frame.pack(side="top", pady=1)
+                kakao_dev_button = tk.Button(kakao_option_frame, text="카카오 디벨로퍼 이동", command=go_kakao_dev)
+                kakao_dev_button.pack(side="left")
+                kakao_auth_button = tk.Button(kakao_option_frame, text="카카오 인증코드 발급", command=send_auth_url)
+                kakao_auth_button.pack(side="left")
+                kakao_guide_frame = tk.Frame(kakao_frame)
+                kakao_guide_frame.pack(side="top", pady=1)
+                url_label = tk.Label(kakao_guide_frame, text="발급 버튼 누른 후 열린 사이트의 전체 URL")
+                url_label.pack(side="left", fill='both')
+                kakao_add_frame = tk.Frame(kakao_frame)
+                kakao_add_frame.pack(side="top", pady=1)
+                url_label2 = tk.Label(kakao_add_frame, text="URL:")
+                url_label2.pack(side="left", fill='both')
+                url_entry2 = tk.Entry(kakao_add_frame, width=30)
+                url_entry2.pack(side="left", fill='both')
+                kakao_guide2_frame = tk.Frame(kakao_frame)
+                kakao_guide2_frame.pack(side="top", pady=1)
 
-        # 검색어 엔트리에 입력 받은 prompt 가져오기
-        prompt = term
+                lines = [
+                    "!! 로그인 기능을 통한 엑세스 토큰 추출을 위해 다음 과정을 반드시 진행해주세요 !!",
+                    "!! 일회성 토큰으로 중복 아이디로 재전송시 10번부터 다시 진행해주세요!  !!"
+                ]
+                for line in lines:
+                    kakao_guide_label = tk.Label(kakao_guide2_frame, text=line, fg="red")
+                    kakao_guide_label.pack(expand=True, fill='both')
+
+                lines2 = [
+                    "1. '카카오 디벨로퍼' 이동 버튼 클릭",
+                    "2. 내 애플리케이션 선택 후 위에서 생성한 애플리케이션 선택",
+                    "3. 내비게이션 메뉴에서 카카오 로그인 클릭 후 활성화 설정의 상태 버튼(OFF)을 클릭",
+                    "4. 팝업 창에서 활성화 버튼 클릭",
+                    "5. 카카오 로그인 화면 하단의 Redirect URI 등록 버튼 클릭",
+                    "6. 팝업 창에서 Redirect URI 항목에 로컬 주소인 'https://localhost:5000' 입력 후 저장 버튼 클릭",
+                    "7. 내비게이션 메뉴에서 카카오 로그인 하위의 동의항목을 클릭",
+                    "8. 페이지 하단의 접근권한 이동 후 카카오톡 메시지 전송의 설정 클릭",
+                    "9. 동의 단계를 이용 중 동의로 선택하고 동의 목적 작성 후 저장 버튼 클릭",
+                    "10. '카카오 인증코드 발급' 클릭",
+                    "최초 실행한 경우 모든 권한 동의 체크 후 '동의하고 계속하기' 클릭",
+                    "11. 웹사이트 상단의 URL 주소를 모두 복사 후 URL: 입력란에 붙여넣고, '전송'버튼 클릭"
+                ]
+                # 여러 개의 라벨 생성하여 각 라벨에 텍스트 할당
+                for index, line in enumerate(lines2):
+                    if index < 9:
+                        kakao_guide_label2 = tk.Label(kakao_guide2_frame, text=line)
+                        kakao_guide_label2.pack(side="top", pady=1)
+                    else:
+                        kakao_guide_label2 = tk.Label(kakao_guide2_frame, text=line, fg="red")
+                        kakao_guide_label2.pack(side="top", pady=1)
+
+                def send_to_kakao():
+                    # 메시지 API 인스턴스 생성
+                    MSG = Message(service_key=self.service_key)
+
+                    # 카카오 인증코드 발급 URL 접속 후 리다이렉트된 URL
+                    redirected_url = url_entry2.get()
+
+                    # 위 URL로 액세스 토큰 추출
+                    access_token = MSG.get_access_token_by_redirected_url(redirected_url)
+
+                    # 액세스 토큰 설정
+                    MSG.set_access_token(access_token)
+
+                    # 나에게 보내기 API 셋팅
+                    message_type = "text"  # 메시지 유형 - 텍스트
+                    text = url  # 전송할 텍스트 메시지 내용
+                    """
+                    link와 button_title을 제거하면 api에서 필수 구성이 없다고 판단하여 오류를 반환하기에 임의의 값 지정함
+                    에러코드 : 400 Client Error: Bad Request for url: https://kapi.kakao.com/v2/api/talk/memo/default/send
+                    """
+                    link = {
+                        "web_url": "Null",
+                        "mobile_web_url": "Null",
+                    }
+                    button_title = "Null"  # 버튼 타이틀
+
+                    MSG.send_message_to_me(
+                        message_type=message_type,
+                        text=text,
+                        link=link,
+                        button_title=button_title,
+                    )
+                    url_window.destroy()
+
+                # '전송' 버튼
+                send_button = tk.Button(kakao_add_frame, text="전송", command=send_to_kakao)
+                send_button.pack(side="left", fill='both')
+
+    def generate_response(self, term=None):
+        if term is None:
+            term = self.gpt_prompt_entry.get()  # gpt_prompt_entry에서 term을 가져옴
+        else:
+            term = self.search_term.get()  # search_term에서 term을 가져옴
+
+        if not term:
+            return
 
         # KoGPT로 다음 문장 생성
         max_tokens = 128
-        result = self.gpt.generate(prompt, max_tokens, temperature=0.7, top_p=0.8)
+        result = self.gpt.generate(term, max_tokens, temperature=0.7, top_p=0.8)
         
         # GPT 답변에 대한 헤더 텍스트
-        prompt_result = "["+ prompt +"]" + "[질문에 대한 답변]\n"
+        prompt_result = "[" + term + "]" + "[질문에 대한 답변]\n"
 
         # 결과 출력
         filtered_result = self.filter_result(result)
@@ -315,8 +429,7 @@ class App(tk.Tk):
         self.gpt_result_text.config(state=tk.NORMAL)  # 텍스트 박스 활성화
         
         self.gpt_result_text.insert(tk.END, prompt_result)
-        self.gpt_result_text.insert(tk.END, filtered_result)
-        self.gpt_result_text.insert(tk.END, '\n')
+        self.gpt_result_text.insert(tk.END, filtered_result + '\n\n')
         self.gpt_result_text.config(state=tk.DISABLED)  # 텍스트 박스 읽기 전용으로 다시 설정
 
     def filter_result(self, result):
