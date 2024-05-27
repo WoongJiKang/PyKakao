@@ -31,6 +31,8 @@
 pip install PyKakao --upgrade
 ```
 
+3. 우측 Release 탭에 Final Release를 클릭하여 zip 파일을 다운 받아 Final Release에서 안내한 경로대로 압축을 해제합니다.
+
 ## 사용 방법
 
 위키 참고 [위키](https://github.com/WoongJiKang/PyKakao_Search_Engine/wiki)
