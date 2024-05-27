@@ -58,6 +58,7 @@ class App(tk.Tk):
         tk.Label(insert_frame, text="검색어:").grid(row=0, column=1)
         tk.Entry(insert_frame, textvariable=self.search_term, width=50).grid(row=0, column=2)
         tk.Button(insert_frame, text="검색", command=self.perform_search).grid(row=0, column=3)
+        tk.Button(insert_frame, text="도움말", command=self.information).grid(row=0, column=4)
 
         # Service Key Entry
         tk.Label(insert_frame, text="API KEY:").grid(row=1, column=1)
@@ -143,7 +144,47 @@ class App(tk.Tk):
         self.gpt_prompt_label.grid_remove()
         self.gpt_prompt_entry.grid_remove()
         self.gpt_generate_button.grid_remove()
+    def information(self):
+        info_window = tk.Toplevel(self)
+        info_window.title("도움말")
+        
+        info_text = (
+            "PyKakao Search_Engine\n"
+            "PyKakao 원작자 : Woo il Jeong\n"
+            "라이센스 : MIT License\n\n"
+            "REST API 키 발급 방법\n\n"
+            "PyKakao 라이브러리로 카카오 API를 사용하기 위해서는 Kakao Developers에 가입해야 합니다.\n"
+            "가입 후 로그인한 상태에서 상단 메뉴의 내 애플리케이션을 선택합니다.\n"
+            "'애플리케이션 추가하기'를 눌러 팝업창이 뜨면 '앱 이름', '사업자명'을 입력하고, "
+            "운영정책에 동의 후 '저장'을 선택합니다.\n"
+            "추가한 애플리케이션을 선택하면 '앱 키' 아래에 'REST API 키'가 생성된 것을 확인할 수 있습니다.\n\n"
+            "API_KEY 관련 도움말\n\n"
+            "Load : api_key.json에 저장된 API 키 값을 API 키 입력란에 붙여넣습니다.\n"
+            "Save : API 키 입력란에 입력된 API 값을 api_key.json에 저장합니다.\n"
+            "Delete : api_key.json을 기본값으로 되돌리고, API 키 입력란을 초기화합니다.\n\n"
+            "Daum 검색 관련 도움말\n\n"
+            "최초 실행 : API KEY 입력 -> Save -> 검색어 입력란에 검색어 입력 -> 검색\n"
+            "(API KEY를 입력한 기록이 있는 경우 자동으로 API 키 값을 불러옵니다. Save누르지 않아도 됌)\n"
+            "각 탭 별로 검색 기록이 표 형식으로 저장되고, 표에서 datetime 클릭 시 시간 순서대로 "
+            "행 전체를 오름차순, 내림차순 정렬합니다.\n"
+            "임의의 행 더블 클릭 시 해당 검색기록에 대한 URL을 이용해 해당 사이트에 접속하거나 "
+            "카카오톡 나에게 링크 보내기 기능을 수행할 수 있는 창이 생성됩니다.\n\n"
+            "KoGPT 검색 관련 도움말\n\n"
+            "검색어 입력 후 검색을 누르면 검색어를 KoGPT에 질문합니다.\n"
+            "KoGPT기능은 토큰값에 따라 답변 형식이 달라지는데 KoGPT는 GPT3 기반으로 "
+            "다른 답변 형식들은 입력값과 유사하지 못한 답변이 발생하여\n"
+            "그나마 유사한 응답이 가능한 질문&응답 토큰인 128을 기본값으로 지정하였습니다.\n"
+            "검색어가 마음에 들지 않는 경우 '질문 입력:' 란을 이용하여 추가 질문 가능합니다."
+        )
 
+        tk.Label(info_window, text=info_text, justify=tk.LEFT, padx=10, pady=10).pack()
+
+        button_frame = tk.Frame(info_window)
+        button_frame.pack(pady=10)
+        import webbrowser
+        tk.Button(button_frame, text="MIT License", command=lambda: webbrowser.open("https://github.com/WoongJiKang/PyKakao/blob/main/LICENSE")).grid(row=0, column=0, padx=5)
+        tk.Button(button_frame, text="PyKakao", command=lambda: webbrowser.open("https://github.com/WooilJeong/PyKakao")).grid(row=0, column=1, padx=5)
+        tk.Button(button_frame, text="Kakao Developers", command=lambda: webbrowser.open("https://developers.kakao.com/")).grid(row=0, column=2, padx=5)
     def perform_search(self):
         # 입력받은 검색어을 검색엔진에 적용 후 실행
         term = self.search_term.get()
@@ -407,6 +448,10 @@ class App(tk.Tk):
                 send_button.pack(side="left", fill='both')
 
     def generate_response(self, term=None):
+        # 업데이트된 service_key 적용
+        self.service_key = self.api_key_entry.get()
+        self.gpt = KoGPT(service_key=self.service_key)
+
         if term is None:
             term = self.gpt_prompt_entry.get()  # gpt_prompt_entry에서 term을 가져옴
         else:
