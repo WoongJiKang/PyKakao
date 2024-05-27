@@ -144,6 +144,7 @@ class App(tk.Tk):
         self.gpt_prompt_label.grid_remove()
         self.gpt_prompt_entry.grid_remove()
         self.gpt_generate_button.grid_remove()
+
     def information(self):
         info_window = tk.Toplevel(self)
         info_window.title("도움말")
@@ -164,7 +165,7 @@ class App(tk.Tk):
             "Delete : api_key.json을 기본값으로 되돌리고, API 키 입력란을 초기화합니다.\n\n"
             "Daum 검색 관련 도움말\n\n"
             "최초 실행 : API KEY 입력 -> Save -> 검색어 입력란에 검색어 입력 -> 검색\n"
-            "(API KEY를 입력한 기록이 있는 경우 자동으로 API 키 값을 불러옵니다. Save누르지 않아도 됌)\n"
+            "(API KEY를 입력한 기록이 있는 경우 자동으로 API 키 값을 불러옵니다. Save누르지 않아도 됨)\n"
             "각 탭 별로 검색 기록이 표 형식으로 저장되고, 표에서 datetime 클릭 시 시간 순서대로 "
             "행 전체를 오름차순, 내림차순 정렬합니다.\n"
             "임의의 행 더블 클릭 시 해당 검색기록에 대한 URL을 이용해 해당 사이트에 접속하거나 "
@@ -495,7 +496,7 @@ class App(tk.Tk):
                 else:
                     filtered_result[key] = value
 
-        # 문자 제거 및 HTML 태그 제거
+        # 문자 제거
         for char in excluded_chars:
             filtered_result = str(filtered_result).replace(char, '')
         
@@ -520,7 +521,7 @@ class App(tk.Tk):
         self.notebook_visible = not self.notebook_visible
 
     def toggle_gpt_frame(self):
-        # KoGPT 검색엔진 숨김, 열림 기능
+        # KoGPT 숨김, 열림 기능
         if self.gpt_frame_visible:
             self.gpt_result_label.grid_remove()
             self.gpt_result_text.grid_remove()
